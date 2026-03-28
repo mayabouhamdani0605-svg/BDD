@@ -1,3 +1,4 @@
+-- BDD - Partie hiba
 -- Création de la table CATEGORIE
 CREATE TABLE CATEGORIE (
     id_categorie INT AUTO_INCREMENT PRIMARY KEY,
