@@ -149,6 +149,7 @@ BEFORE INSERT ON PROCESSEUR
 FOR EACH ROW
 BEGIN 
     IF NEW.vitesse_ghz <= 0 THEN 
+    SIGNAL SQLSTATE '45000'
        SET MESSAGE_TEXT = 'ERREUR : la vitesse du processeur doit etre superieure a 0GHz.';
     END IF;
     IF NEW.nb_coeurs <= 0 THEN
