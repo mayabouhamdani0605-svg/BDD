@@ -78,25 +78,25 @@ CREATE TABLE PRODUIT (
         REFERENCES ECRAN(idEcran)
 );
 
---Les index:
+-- Les index:
 -- filtrage par type de processeur
 CREATE INDEX idx_processeur_modele 
 ON PROCESSEUR(modele);
---filtrage par performance du processeur
+-- filtrage par performance du processeur
 CREATE INDEX idx_processeur_vitesse
 ON PROCESSEUR(vitesse_ghz);
---(filtrage par memoire : 8GB , 16GB , 32GB )
+-- (filtrage par memoire : 8GB , 16GB , 32GB )
 CREATE INDEX idx_ram_capacite
 ON MEMOIRE_RAM(capacite_gb);
---filtrage sur la carte graphique
+-- filtrage sur la carte graphique
 CREATE INDEX idx_carte_graphique_modele
 ON CARTE_GRAPHIQUE(modele);
---filtrage par taille d'ecran 
+-- filtrage par taille d'ecran 
 CREATE INDEX idx_ecran_diagonale
 ON ECRAN(diagonale_pouce);
 CREATE INDEX idx_produit_categorie 
 ON PRODUIT(id_categorie);
---les vues
+-- les vues
 -- VUE N°1 : Fiche technique complete d'un produit 
 CREATE VIEW VUE_COMPOSANTS_PRODUIT AS
 SELECT 
@@ -140,7 +140,7 @@ JOIN ECRAN e ON p.idEcran = e.idEcran
 WHERE p.disponibilite = 'en_stock'
 ORDER BY p.prix_vente ASC;
 
---Triggers 
+-- Triggers 
 DELIMITER $$
 -- Trigger 1 : check si vitesse et nb_coeurs > 0
 CREATE TRIGGER TRG_VERIF_PROCESSEUR_INSERT
@@ -157,7 +157,7 @@ BEGIN
     END IF;
 END$$
 
---Trigger 2 : check la meme chose a la modification 
+-- Trigger 2 : check la meme chose a la modification 
 CREATE TRIGGER TRG_VERIF_PROCESSEUR_UPDATE
 BEFORE UPDATE ON PROCESSEUR 
 FOR EACH ROW
@@ -172,7 +172,7 @@ BEGIN
     END IF;
 END$$
 
---Trigger 3 : verification de la diagonale de l'ecran celle ci 
+-- Trigger 3 : verification de la diagonale de l'ecran celle ci 
 -- devrait etre entre 10 et 20 pouces 
 CREATE TRIGGER TRG_VERIF_ECRAN_INSERT
 BEFORE INSERT ON ECRAN
@@ -184,7 +184,7 @@ BEGIN
     END IF;
 END$$
 
---Trigger 4 : rigger empêche de mettre une quantité négative et si la quantite egale a 0 
+-- Trigger 4 : rigger empêche de mettre une quantité négative et si la quantite egale a 0 
 CREATE TRIGGER tr_check_stock_update
 BEFORE UPDATE ON PRODUIT
 FOR EACH ROW
@@ -257,6 +257,10 @@ INSERT INTO CATEGORIE (nom_categorie) VALUES
 ('PC Portable Gamer'), 
 ('Google Chrome OS');
 
+
+INSERT INTO PRODUIT (ref_produit, nom_commercial, marque, prix_vente, etat, disponibilite, stock_quantite, os, poids_kg, description, id_categorie, idProcesseur, id_ram, idCarteGraphique, idEcran) VALUES
+    ('LAP-001', 'Dell XPS 15', 'Dell', 2499.00, 'nouveau', 'en_stock', 10, 'Windows 11', 1.86, 'Laptop haut de gamme', 1, 2, 2, 3, 3),
+    ('LAP-002', 'HP Pavilion 14', 'HP', 1399.00, 'nouveau', 'en_stock', 15, 'Windows 11', 1.41, 'Laptop milieu de gamme', 1, 1, 1, 1, 2);
 
 -- BDD - Partie Ahmed
 -- Schéma logique : CLIENT, COMMANDE, LIGNE_COMMANDE, AVIS
