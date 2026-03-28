@@ -10,7 +10,7 @@ CREATE TABLE PROCESSEUR (
 );
 CREATE TABLE MEMOIRE_RAM (
     id_ram INT AUTO_INCREMENT,
-    capaqcite_gb INT NOT NULL ,
+    capacite_gb INT NOT NULL ,
     CONSTRAINT PK_MEMOIRE_RAM PRIMARY KEY(id_ram)
 );
 CREATE TABLE CARTE_GRAPHIQUE (
@@ -163,6 +163,7 @@ BEFORE UPDATE ON PROCESSEUR
 FOR EACH ROW
 BEGIN 
     IF NEW.vitesse_ghz <= 0 THEN 
+    SIGNAL SQLSTATE '45000'
        SET MESSAGE_TEXT = 'ERREUR : la vitesse du processeur doit etre superieure a 0GHz.';
     END IF;
     IF NEW.nb_coeurs <= 0 THEN
@@ -174,12 +175,12 @@ END$$
 --Trigger 3 : verification de la diagonale de l'ecran celle ci 
 -- devrait etre entre 10 et 20 pouces 
 CREATE TRIGGER TRG_VERIF_ECRAN_INSERT
-BEFORE INSERT ON ECRAN?
+BEFORE INSERT ON ECRAN
 FOR EACH ROW 
 BEGIN 
     IF NEW.diagonale_pouce <10 OR NEW.diagonale_pouce > 20 THEN
      SIGNAL SQLSTATE '45000'
-          SET MESSAGE_TEXT ='Erreur : la diagonale doit etre entre 10 et 20 pouces.'
+          SET MESSAGE_TEXT ='Erreur : la diagonale doit etre entre 10 et 20 pouces.';
     END IF;
 END$$
 
