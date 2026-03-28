@@ -1,5 +1,5 @@
 -- partie de maya 
---creation des tables : processeur , memoire_ram, carte_graphique, ecran
+-- creation des tables : processeur , memoire_ram, carte_graphique, ecran
 CREATE TABLE PROCESSEUR (
     idProcesseur INT AUTO_INCREMENT,
     modele VARCHAR(100) NOT NULL,
