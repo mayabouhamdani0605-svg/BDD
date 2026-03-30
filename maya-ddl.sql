@@ -1,11 +1,11 @@
 -- partie de maya 
 --creation des tables : processeur , memoire_ram, carte_graphique, ecran
 CREATE TABLE PROCESSEUR (
-    idProcesseur INT NOT NULL,
+    id_Processeur INT NOT NULL,
     modele VARCHAR(100) NOT NULL,
     vitesse_ghz DECIMAL(4,2) NOT NULL,
     nb_coeurs INT NOT NULL,
-    CONSTRAINT PK_PROCESSEUR PRIMARY KEY (idProcesseur)
+    CONSTRAINT PK_PROCESSEUR PRIMARY KEY (id_Processeur)
 );
 CREATE TABLE MEMOIRE_RAM (
     id_ram INT NOT NULL,
@@ -13,15 +13,15 @@ CREATE TABLE MEMOIRE_RAM (
     CONSTRAINT PK_MEMOIRE_RAM PRIMARY KEY(idRAM)
 );
 CREATE TABLE CARTE_GRAPHIQUE (
-    idCarteGraphique INT NOT NULL,
+    id_gpu INT NOT NULL,
     modele VARCHAR(100) NOT NULL,
-    CONSTRAINT PK_CARTE_GRAPHIQUE PRIMARY KEY(idCarteGraphique)
+    CONSTRAINT PK_CARTE_GRAPHIQUE PRIMARY KEY(id_gpu)
 );
 
 CREATE TABLE ECRAN(
-    idEcran INT NOT NULL,
-    diagonale_pouce DECIMAL(4,1) NOT NULL,
-    CONSTRAINT PK_ECRAN PRIMARY KEY(idEcran)
+    id_ecran INT NOT NULL,
+    diagonale_pouces DECIMAL(4,1) NOT NULL,
+    CONSTRAINT PK_ECRAN PRIMARY KEY(id_ecran)
 );
 --Les index:
 -- filtrage par type de processeur
@@ -38,7 +38,7 @@ CREATE INDEX idx_carte_graphique_modele
 ON CARTE_GRAPHIQUE(modele);
 --filtrage par taille d'ecran 
 CREATE INDEX idx_ecran_diagonale
-ON ECRAN(diagonale_pouce);
+ON ECRAN(diagonale_pouces);
 
 --les vues
 -- VUE N°1 : Fiche technique complete d'un produit 
@@ -54,12 +54,12 @@ SELECT
         pr.nb_coeurs,
         r.capacite_gb       AS ram_gb,
         cg.modele           AS carte_graphique,
-        e.diagonale_pouce   AS ecran_pouce
+        e.diagonale_pouces   AS ecran_pouce
 FROM PRODUIT p 
-JOIN PROCESSEUR pr ON p.idProcesseur = pr.idProcesseur
+JOIN PROCESSEUR pr ON p.id_Processeur = pr.id_Processeur
 JOIN MEMOIRE_RAM r ON p.idRAM = r.idRAM
-JOIN CARTE_GRAPHIQUE cg ON p.idCarteGraphique = cg.idCarteGraphique
-JOIN ECRAN e ON p.idEcran = e.idEcran;
+JOIN CARTE_GRAPHIQUE cg ON p.id_gpu = cg.id_gpu
+JOIN ECRAN e ON p.id_ecran = e.id_ecran;
 
 -- VUE N°2 : classement des produits du moins cher au plus cher
 -- utile pour les clients qui ont un budget limité
@@ -75,12 +75,12 @@ SELECT
         pr.nb_coeurs,
         r.capacite_gb       AS ram_gb,
         cg.modele           AS carte_graphique,
-        e.diagonale_pouce   AS ecran_pouce
+        e.diagonale_pouces   AS ecran_pouce
 ROM PRODUIT p 
-JOIN PROCESSEUR pr ON p.idProcesseur = pr.idProcesseur
+JOIN PROCESSEUR pr ON p.id_Processeur = pr.id_Processeur
 JOIN MEMOIRE_RAM r ON p.idRAM = r.idRAM
-JOIN CARTE_GRAPHIQUE cg ON p.idCarteGraphique = cg.idCarteGraphique
-JOIN ECRAN e ON p.idEcran = e.idEcran
+JOIN CARTE_GRAPHIQUE cg ON p.id_gpu = cg.id_gpu
+JOIN ECRAN e ON p.id_ecran = e.id_ecran
 WHERE p.disponibilite = 'en_stock'
 ORDER BY p.prix ASC;
 
@@ -117,7 +117,7 @@ CREATE TRIGGER TRG_VERIF_ECRAN_INSERT
 BEFORE INSERT ON ECRA?
 FOR EACH ROW 
 BEGIN 
-    IF NEW.diagonale_pouce <10 OR NEW.diagonale_pouce > 20 THEN
+    IF NEW.diagonale_pouces <10 OR NEW.diagonale_pouces > 20 THEN
           SET MESSAGE_TEXT ='Erreur : la diagonale doit etre entre 10 et 20 pouces.'
     END IF;
 END$$
@@ -143,7 +143,7 @@ INSERT INTO CARTE_GRAPHIQUE (modele) VALUES
     ('NVIDIA GeForce RTX 4060'),
     ('NVIDIA GeForce RTX 4070'),
     ('Apple M3 GPU');
-INSERT INTO ECRAN (diagonale_pouce) VALUES 
+INSERT INTO ECRAN (diagonale_pouces) VALUES 
     (13.3),
     (14.0),
     (15.6),
