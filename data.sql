@@ -325,11 +325,17 @@ CREATE TABLE AVIS (
 CREATE INDEX idx_avis_produit
 ON AVIS(id_produit);
 
+CREATE INDEX idx_avis_client
+ON AVIS(id_client);
+
 CREATE INDEX idx_commande_client
 ON COMMANDE(id_client);
 
 CREATE INDEX idx_commande_date
 ON COMMANDE(date_commande);
+
+CREATE INDEX idx_commande_statut
+ON COMMANDE(statut);
 
 
 -- TRIGGERS
@@ -385,7 +391,70 @@ BEGIN
     END IF;
 END$$
 
+-- Trigger 4 : Mettre a jour prix_total de la commande apres insertion de ligne
+CREATE TRIGGER TRG_MAJ_MONTANT_COMMANDE_INSERT
+AFTER INSERT ON LIGNE_COMMANDE
+FOR EACH ROW
+BEGIN
+    UPDATE COMMANDE
+    SET prix_total = (
+        SELECT SUM(quantite * prix_unitaire_capture)
+        FROM LIGNE_COMMANDE
+        WHERE id_commande = NEW.id_commande
+    )
+    WHERE id_commande = NEW.id_commande;
+END$$
+
 DELIMITER ;
+
+
+-- VUES COMPLEXES
+
+-- Vue 1 : Clients fidelite avec statistiques completes
+CREATE VIEW VUE_CLIENTS_FIDELITE AS
+SELECT
+    c.id_client,
+    c.nom,
+    c.prenom,
+    c.email,
+    COUNT(DISTINCT cmd.id_commande) AS nb_commandes,
+    COUNT(DISTINCT a.id_avis) AS nb_avis_rediges,
+    SUM(cmd.prix_total) AS prix_total_depense,
+    AVG(a.note_sur_5) AS note_moyenne_donnee,
+    CASE
+        WHEN SUM(cmd.prix_total) IS NULL OR SUM(cmd.prix_total) < 500 THEN 'Standard'
+        WHEN SUM(cmd.prix_total) < 2000 THEN 'Premium'
+        ELSE 'VIP'
+    END AS statut_fidelite,
+    DATE(c.date_inscription) AS date_inscription
+FROM CLIENT c
+LEFT JOIN COMMANDE cmd ON c.id_client = cmd.id_client AND cmd.statut = 'livree'
+LEFT JOIN AVIS a ON c.id_client = a.id_client
+GROUP BY c.id_client, c.nom, c.prenom, c.email, c.date_inscription;
+
+-- Vue 2 : Produits avec statistiques et avis
+CREATE VIEW VUE_PRODUITS_STATS AS
+SELECT
+    p.id_produit,
+    p.ref_produit,
+    p.nom_commercial,
+    p.marque,
+    p.prix_vente,
+    COUNT(DISTINCT lc.id_commande) AS nb_ventes,
+    SUM(lc.quantite) AS quantite_totale_vendue,
+    COUNT(DISTINCT a.id_avis) AS nb_avis,
+    ROUND(AVG(a.note_sur_5), 2) AS note_moyenne,
+    CASE
+        WHEN COUNT(DISTINCT a.id_avis) = 0 THEN 'Non evalue'
+        WHEN AVG(a.note_sur_5) >= 4.5 THEN 'Excellent'
+        WHEN AVG(a.note_sur_5) >= 4 THEN 'Tres bien'
+        WHEN AVG(a.note_sur_5) >= 3 THEN 'Bien'
+        ELSE 'A ameliorer'
+    END AS qualite_produit
+FROM PRODUIT p
+LEFT JOIN LIGNE_COMMANDE lc ON p.id_produit = lc.id_produit
+LEFT JOIN AVIS a ON p.id_produit = a.id_produit
+GROUP BY p.id_produit, p.ref_produit, p.nom_commercial, p.marque, p.prix_vente;
 
 
 -- DONNEES DE TEST
