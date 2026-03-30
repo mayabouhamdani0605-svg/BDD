@@ -268,10 +268,13 @@ INSERT INTO PRODUIT (ref_produit, nom_commercial, marque, prix_vente, etat, disp
 
 CREATE TABLE CLIENT (
     idClient INT AUTO_INCREMENT,
+    id_utilisateur INT NULL,
     nom VARCHAR(100) NOT NULL,
     prenom VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     telephone VARCHAR(30),
+    adresse_livraison TEXT,
+    statut_compte ENUM('actif', 'inactif') NOT NULL DEFAULT 'actif',
     date_inscription DATE NOT NULL,
     CONSTRAINT PK_CLIENT PRIMARY KEY (idClient)
 );
@@ -281,6 +284,7 @@ CREATE TABLE COMMANDE (
     dateCommande DATE NOT NULL,
     statut ENUM('en_cours', 'livree', 'annulee') NOT NULL,
     montant_total DECIMAL(10,2) NOT NULL,
+    adresse_livraison TEXT,
     idClient INT NULL,
     CONSTRAINT PK_COMMANDE PRIMARY KEY (idCommande),
     CONSTRAINT FK_COMMANDE_CLIENT FOREIGN KEY (idClient)
@@ -288,32 +292,30 @@ CREATE TABLE COMMANDE (
 );
 
 CREATE TABLE LIGNE_COMMANDE (
-    idLigneCommande INT AUTO_INCREMENT,
     idCommande INT NOT NULL,
     id_produit INT NOT NULL,
-    quantite INT NOT NULL,
-    prix_unitaire DECIMAL(10,2) NOT NULL,
-    CONSTRAINT PK_LIGNE_COMMANDE PRIMARY KEY (idLigneCommande),
+    quantite INT NOT NULL CHECK (quantite > 0),
+    prix_unitaire_capture DECIMAL(10,2) NOT NULL CHECK (prix_unitaire_capture > 0),
+    CONSTRAINT PK_LIGNE_COMMANDE PRIMARY KEY (idCommande, id_produit),
     CONSTRAINT FK_LIGNE_COMMANDE_COMMANDE FOREIGN KEY (idCommande)
-        REFERENCES COMMANDE(idCommande),
+        REFERENCES COMMANDE(idCommande) ON DELETE CASCADE,
     CONSTRAINT FK_LIGNE_COMMANDE_PRODUIT FOREIGN KEY (id_produit)
-        REFERENCES PRODUIT(id_produit),
-    CONSTRAINT CHK_LIGNE_QTE CHECK (quantite > 0),
-    CONSTRAINT CHK_LIGNE_PRIX CHECK (prix_unitaire > 0)
+        REFERENCES PRODUIT(id_produit) ON DELETE RESTRICT
 );
 
 CREATE TABLE AVIS (
     idAvis INT AUTO_INCREMENT,
     idClient INT NULL,
     id_produit INT NOT NULL,
-    note INT NOT NULL,
+    note INT NOT NULL CHECK (note >= 1 AND note <= 5),
     commentaire TEXT,
     date_avis DATE NOT NULL,
     CONSTRAINT PK_AVIS PRIMARY KEY (idAvis),
     CONSTRAINT FK_AVIS_CLIENT FOREIGN KEY (idClient)
-        REFERENCES CLIENT(idClient),
+        REFERENCES CLIENT(idClient) ON DELETE SET NULL,
     CONSTRAINT FK_AVIS_PRODUIT FOREIGN KEY (id_produit)
-        REFERENCES PRODUIT(id_produit)
+        REFERENCES PRODUIT(id_produit) ON DELETE RESTRICT,
+    CONSTRAINT UK_AVIS_CLIENT_PRODUIT UNIQUE (idClient, id_produit)
 );
 
 
@@ -397,25 +399,24 @@ INSERT INTO CLIENT (nom, prenom, email, telephone, date_inscription) VALUES
     ('El Idrissi', 'Youssef', 'youssef.elidrissi@email.com', '0600000002', '2026-01-12'),
     ('Naciri', 'Lina', 'lina.naciri@email.com', '0600000003', '2026-01-15');
 
--- 2 commandes (1 livree, 1 en_cours)
+-- 3 commandes (2 livrees, 1 en_cours)
 INSERT INTO COMMANDE (dateCommande, statut, montant_total, idClient) VALUES
     ('2026-02-10', 'livree', 2499.00, 1),
-    ('2026-02-15', 'en_cours', 1399.00, 2);
+    ('2026-02-15', 'en_cours', 1399.00, 2),
+    ('2026-02-12', 'livree', 1399.00, 1);
 
 -- lignes de commande
--- on suppose que les produits id 1 et 2 existent deja
-INSERT INTO LIGNE_COMMANDE (idCommande, id_produit, quantite, prix_unitaire) VALUES
+INSERT INTO LIGNE_COMMANDE (idCommande, id_produit, quantite, prix_unitaire_capture) VALUES
     (1, 1, 1, 2499.00),
-    (2, 2, 1, 1399.00);
+    (2, 2, 1, 1399.00),
+    (3, 2, 1, 1399.00);
 
--- 2 avis (valides selon TRG_VERIF_AVIS)
--- client 1 a une commande livree pour le produit 1
+-- 2 avis valides selon TRG_VERIF_AVIS
 INSERT INTO AVIS (idClient, id_produit, note, commentaire, date_avis) VALUES
     (1, 1, 5, 'Excellent PC, tres performant.', '2026-02-20');
 
--- deuxieme avis sur le meme produit pour rester coherent avec les commandes existantes
 INSERT INTO AVIS (idClient, id_produit, note, commentaire, date_avis) VALUES
-    (1, 1, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');
+    (1, 2, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');
 
 
 -- Partie Comptabilite
