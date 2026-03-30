@@ -44,7 +44,7 @@ CREATE TABLE AVIS (
     id_avis INT AUTO_INCREMENT,
     id_client INT NULL,
     id_produit INT NOT NULL,
-    note_sur_5 INT NOT NULL CHECK (note >= 1 AND note <= 5),
+    note_sur_5 INT NOT NULL CHECK (note_sur_5 >= 1 AND note_sur_5 <= 5),
     commentaire TEXT,
     date_avis DATE NOT NULL,
     CONSTRAINT PK_AVIS PRIMARY KEY (id_avis),
