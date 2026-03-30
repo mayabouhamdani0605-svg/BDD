@@ -163,7 +163,7 @@ SELECT
     COUNT(DISTINCT cmd.id_commande) AS nb_commandes,
     COUNT(DISTINCT a.id_avis) AS nb_avis_rediges,
     SUM(cmd.prix_total) AS prix_total_depense,
-    AVG(a.note) AS note_moyenne_donnee,
+    AVG(a.note_sur_5) AS note_moyenne_donnee,
     CASE 
         WHEN SUM(cmd.prix_total) IS NULL OR SUM(cmd.prix_total) < 500 THEN 'Standard'
         WHEN SUM(cmd.prix_total) < 2000 THEN 'Premium'
@@ -186,12 +186,12 @@ SELECT
     COUNT(DISTINCT lc.id_commande) AS nb_ventes,
     SUM(lc.quantite) AS quantite_totale_vendue,
     COUNT(DISTINCT a.id_avis) AS nb_avis,
-    ROUND(AVG(a.note), 2) AS note_moyenne,
+    ROUND(AVG(a.note_sur_5), 2) AS note_moyenne,
     CASE 
         WHEN COUNT(DISTINCT a.id_avis) = 0 THEN 'Non evalue'
-        WHEN AVG(a.note) >= 4.5 THEN 'Excellent'
-        WHEN AVG(a.note) >= 4 THEN 'Tres bien'
-        WHEN AVG(a.note) >= 3 THEN 'Bien'
+        WHEN AVG(a.note_sur_5) >= 4.5 THEN 'Excellent'
+        WHEN AVG(a.note_sur_5) >= 4 THEN 'Tres bien'
+        WHEN AVG(a.note_sur_5) >= 3 THEN 'Bien'
         ELSE 'A ameliorer'
     END AS qualite_produit
 FROM PRODUIT p
@@ -223,9 +223,9 @@ INSERT INTO LIGNE_COMMANDE (id_commande, id_produit, quantite, prix_unitaire_cap
 
 -- 2 avis valides selon TRG_VERIF_AVIS
 -- client 1 a commande 1 (livree) pour produit 1
-INSERT INTO AVIS (id_client, id_produit, note, commentaire, date_avis) VALUES
+INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
     (1, 1, 5, 'Excellent PC, tres performant.', '2026-02-20');
 
 -- client 1 a commande 3 (livree) pour produit 2 → avis autorise
-INSERT INTO AVIS (id_client, id_produit, note, commentaire, date_avis) VALUES
+INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
     (1, 2, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');

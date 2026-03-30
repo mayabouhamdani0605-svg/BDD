@@ -411,9 +411,7 @@ INSERT INTO LIGNE_COMMANDE (id_commande, id_produit, quantite, prix_unitaire_cap
 
 -- 2 avis valides selon TRG_VERIF_AVIS
 INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
-    (1, 1, 5, 'Excellent PC, tres performant.', '2026-02-20');
-
-INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
+    (1, 1, 5, 'Excellent PC, tres performant.', '2026-02-20'),
     (1, 2, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');
 
 
