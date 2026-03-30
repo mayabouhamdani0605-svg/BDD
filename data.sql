@@ -267,7 +267,7 @@ INSERT INTO PRODUIT (ref_produit, nom_commercial, marque, prix_vente, etat, disp
 -- Prérequis : la table PRODUIT existe deja (avec id_produit)
 
 CREATE TABLE CLIENT (
-    idClient INT AUTO_INCREMENT,
+    id_client INT AUTO_INCREMENT,
     id_utilisateur INT NULL,
     nom VARCHAR(100) NOT NULL,
     prenom VARCHAR(100) NOT NULL,
@@ -276,46 +276,46 @@ CREATE TABLE CLIENT (
     adresse_livraison TEXT,
     statut_compte ENUM('actif', 'inactif') NOT NULL DEFAULT 'actif',
     date_inscription DATE NOT NULL,
-    CONSTRAINT PK_CLIENT PRIMARY KEY (idClient)
+    CONSTRAINT PK_CLIENT PRIMARY KEY (id_client)
 );
 
 CREATE TABLE COMMANDE (
-    idCommande INT AUTO_INCREMENT,
-    dateCommande DATE NOT NULL,
+    id_commande INT AUTO_INCREMENT,
+    date_commande DATE NOT NULL,
     statut ENUM('en_cours', 'livree', 'annulee') NOT NULL,
-    montant_total DECIMAL(10,2) NOT NULL,
+    prix_total DECIMAL(10,2) NOT NULL,
     adresse_livraison TEXT,
-    idClient INT NULL,
-    CONSTRAINT PK_COMMANDE PRIMARY KEY (idCommande),
-    CONSTRAINT FK_COMMANDE_CLIENT FOREIGN KEY (idClient)
-        REFERENCES CLIENT(idClient)
+    id_client INT NULL,
+    CONSTRAINT PK_COMMANDE PRIMARY KEY (id_commande),
+    CONSTRAINT FK_COMMANDE_CLIENT FOREIGN KEY (id_client)
+        REFERENCES CLIENT(id_client)
 );
 
 CREATE TABLE LIGNE_COMMANDE (
-    idCommande INT NOT NULL,
+    id_commande INT NOT NULL,
     id_produit INT NOT NULL,
     quantite INT NOT NULL CHECK (quantite > 0),
     prix_unitaire_capture DECIMAL(10,2) NOT NULL CHECK (prix_unitaire_capture > 0),
-    CONSTRAINT PK_LIGNE_COMMANDE PRIMARY KEY (idCommande, id_produit),
-    CONSTRAINT FK_LIGNE_COMMANDE_COMMANDE FOREIGN KEY (idCommande)
-        REFERENCES COMMANDE(idCommande) ON DELETE CASCADE,
+    CONSTRAINT PK_LIGNE_COMMANDE PRIMARY KEY (id_commande, id_produit),
+    CONSTRAINT FK_LIGNE_COMMANDE_COMMANDE FOREIGN KEY (id_commande)
+        REFERENCES COMMANDE(id_commande) ON DELETE CASCADE,
     CONSTRAINT FK_LIGNE_COMMANDE_PRODUIT FOREIGN KEY (id_produit)
         REFERENCES PRODUIT(id_produit) ON DELETE RESTRICT
 );
 
 CREATE TABLE AVIS (
-    idAvis INT AUTO_INCREMENT,
-    idClient INT NULL,
+    id_avis INT AUTO_INCREMENT,
+    id_client INT NULL,
     id_produit INT NOT NULL,
-    note INT NOT NULL CHECK (note >= 1 AND note <= 5),
+    note_sur_5 INT NOT NULL CHECK (note_sur_5 >= 1 AND note_sur_5 <= 5),
     commentaire TEXT,
     date_avis DATE NOT NULL,
-    CONSTRAINT PK_AVIS PRIMARY KEY (idAvis),
-    CONSTRAINT FK_AVIS_CLIENT FOREIGN KEY (idClient)
-        REFERENCES CLIENT(idClient) ON DELETE SET NULL,
+    CONSTRAINT PK_AVIS PRIMARY KEY (id_avis),
+    CONSTRAINT FK_AVIS_CLIENT FOREIGN KEY (id_client)
+        REFERENCES CLIENT(id_client) ON DELETE SET NULL,
     CONSTRAINT FK_AVIS_PRODUIT FOREIGN KEY (id_produit)
         REFERENCES PRODUIT(id_produit) ON DELETE RESTRICT,
-    CONSTRAINT UK_AVIS_CLIENT_PRODUIT UNIQUE (idClient, id_produit)
+    CONSTRAINT UK_AVIS_CLIENT_PRODUIT UNIQUE (id_client, id_produit)
 );
 
 
@@ -326,10 +326,10 @@ CREATE INDEX idx_avis_produit
 ON AVIS(id_produit);
 
 CREATE INDEX idx_commande_client
-ON COMMANDE(idClient);
+ON COMMANDE(id_client);
 
 CREATE INDEX idx_commande_date
-ON COMMANDE(dateCommande);
+ON COMMANDE(date_commande);
 
 
 -- TRIGGERS
@@ -338,18 +338,17 @@ ON COMMANDE(dateCommande);
 DELIMITER $$
 
 -- Trigger 1 : RGPD, avant suppression d'un client
--- on anonymise les references dans COMMANDE et AVIS
 CREATE TRIGGER TRG_RGPD_DESINSCRIPTION
 BEFORE DELETE ON CLIENT
 FOR EACH ROW
 BEGIN
     UPDATE COMMANDE
-    SET idClient = NULL
-    WHERE idClient = OLD.idClient;
+    SET id_client = NULL
+    WHERE id_client = OLD.id_client;
 
     UPDATE AVIS
-    SET idClient = NULL
-    WHERE idClient = OLD.idClient;
+    SET id_client = NULL
+    WHERE id_client = OLD.id_client;
 END$$
 
 -- Trigger 2 : verifier que la note est entre 1 et 5
@@ -357,19 +356,18 @@ CREATE TRIGGER TRG_VERIF_NOTE
 BEFORE INSERT ON AVIS
 FOR EACH ROW
 BEGIN
-    IF NEW.note < 1 OR NEW.note > 5 THEN
+    IF NEW.note_sur_5 < 1 OR NEW.note_sur_5 > 5 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Erreur : la note doit etre comprise entre 1 et 5.';
     END IF;
 END$$
 
 -- Trigger 3 : verifier qu'un avis est autorise
--- le client doit avoir une commande livree contenant ce produit
 CREATE TRIGGER TRG_VERIF_AVIS
 BEFORE INSERT ON AVIS
 FOR EACH ROW
 BEGIN
-    IF NEW.idClient IS NULL THEN
+    IF NEW.id_client IS NULL THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Erreur : un avis doit etre lie a un client.';
     END IF;
@@ -377,8 +375,8 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM COMMANDE c
-        JOIN LIGNE_COMMANDE lc ON lc.idCommande = c.idCommande
-        WHERE c.idClient = NEW.idClient
+        JOIN LIGNE_COMMANDE lc ON lc.id_commande = c.id_commande
+        WHERE c.id_client = NEW.id_client
           AND c.statut = 'livree'
           AND lc.id_produit = NEW.id_produit
     ) THEN
@@ -400,22 +398,22 @@ INSERT INTO CLIENT (nom, prenom, email, telephone, date_inscription) VALUES
     ('Naciri', 'Lina', 'lina.naciri@email.com', '0600000003', '2026-01-15');
 
 -- 3 commandes (2 livrees, 1 en_cours)
-INSERT INTO COMMANDE (dateCommande, statut, montant_total, idClient) VALUES
+INSERT INTO COMMANDE (date_commande, statut, prix_total, id_client) VALUES
     ('2026-02-10', 'livree', 2499.00, 1),
     ('2026-02-15', 'en_cours', 1399.00, 2),
     ('2026-02-12', 'livree', 1399.00, 1);
 
 -- lignes de commande
-INSERT INTO LIGNE_COMMANDE (idCommande, id_produit, quantite, prix_unitaire_capture) VALUES
+INSERT INTO LIGNE_COMMANDE (id_commande, id_produit, quantite, prix_unitaire_capture) VALUES
     (1, 1, 1, 2499.00),
     (2, 2, 1, 1399.00),
     (3, 2, 1, 1399.00);
 
 -- 2 avis valides selon TRG_VERIF_AVIS
-INSERT INTO AVIS (idClient, id_produit, note, commentaire, date_avis) VALUES
+INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
     (1, 1, 5, 'Excellent PC, tres performant.', '2026-02-20');
 
-INSERT INTO AVIS (idClient, id_produit, note, commentaire, date_avis) VALUES
+INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
     (1, 2, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');
 
 
@@ -447,22 +445,22 @@ CREATE TABLE RAPPORT_MENSUEL (
 
 CREATE VIEW VUE_CA_ANNUEL AS
 SELECT 
-    YEAR(c.dateCommande) AS annee,
-    SUM(l.quantite * l.prix_unitaire) AS chiffre_affaires
+    YEAR(c.date_commande) AS annee,
+    SUM(l.quantite * l.prix_unitaire_capture) AS chiffre_affaires
 FROM COMMANDE c
 JOIN LIGNE_COMMANDE l ON c.idCommande = l.idCommande
 WHERE c.statut = 'livree'
-GROUP BY YEAR(c.dateCommande);
+GROUP BY YEAR(c.date_commande);
 
 CREATE VIEW VUE_CA_MENSUEL AS
 SELECT 
-    YEAR(c.dateCommande) AS annee,
-    MONTH(c.dateCommande) AS mois,
-    SUM(l.quantite * l.prix_unitaire) AS chiffre_affaires
+    YEAR(c.date_commande) AS annee,
+    MONTH(c.date_commande) AS mois,
+    SUM(l.quantite * l.prix_unitaire_capture) AS chiffre_affaires
 FROM COMMANDE c
 JOIN LIGNE_COMMANDE l ON c.idCommande = l.idCommande
 WHERE c.statut = 'livree'
-GROUP BY YEAR(c.dateCommande), MONTH(c.dateCommande);
+GROUP BY YEAR(c.date_commande), MONTH(c.date_commande);
 
 CREATE ROLE role_comptabilite;
 CREATE ROLE role_client;
@@ -483,20 +481,20 @@ FOR EACH ROW
 BEGIN
     DECLARE total DECIMAL(10,2);
     IF NEW.statut = 'livree' AND OLD.statut <> 'livree' THEN
-        SELECT SUM(quantite * prix_unitaire)
+        SELECT SUM(quantite * prix_unitaire_capture)
         INTO total
         FROM LIGNE_COMMANDE
         WHERE idCommande = NEW.idCommande;
         -- annuel
         INSERT INTO RAPPORT_FINANCIER (annee, chiffre_affaires_annuel)
-        VALUES (YEAR(NEW.dateCommande), total)
+        VALUES (YEAR(NEW.date_commande), total)
         ON DUPLICATE KEY UPDATE
         chiffre_affaires_annuel = chiffre_affaires_annuel + total;
         -- mensuel
         INSERT INTO RAPPORT_MENSUEL (id_rapport, mois, chiffre_affaires_mensuel)
-        SELECT id_rapport, MONTH(NEW.dateCommande), total
+        SELECT id_rapport, MONTH(NEW.date_commande), total
         FROM RAPPORT_FINANCIER
-        WHERE annee = YEAR(NEW.dateCommande)
+        WHERE annee = YEAR(NEW.date_commande)
         ON DUPLICATE KEY UPDATE
         chiffre_affaires_mensuel = chiffre_affaires_mensuel + total;
     END IF;
