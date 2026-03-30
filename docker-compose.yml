@@ -4,8 +4,8 @@ services:
     container_name: projet-bdd-mysql-1
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: mydatabase
-      MYSQL_USER: admin
+      MYSQL_DATABASE: boutique_pc
+      MYSQL_USER: UTILISATEUR
       MYSQL_PASSWORD: password
     ports:
       - "3306:3306"
