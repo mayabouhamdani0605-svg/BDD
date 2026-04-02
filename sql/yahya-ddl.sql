@@ -1,12 +1,13 @@
+-- BDD - Partie Yahya
 
-
+-- Création de la table UTILISATAEUR
 CREATE TABLE UTILISATEUR (
     id_utilisateur INT  PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
     mot_de_passe VARCHAR(255) NOT NULL
 );
 
-
+--Création de la table MEMBRE_COMPTABILITE 
 CREATE TABLE MEMBRE_COMPTABILITE (
     id_utilisateur INT PRIMARY KEY,
     matricule VARCHAR(50),
@@ -14,12 +15,14 @@ CREATE TABLE MEMBRE_COMPTABILITE (
     FOREIGN KEY (id_utilisateur) REFERENCES UTILISATEUR(id_utilisateur)
 );
 
-
+--Création de la table RAPPORT_FINANCIER 
 CREATE TABLE RAPPORT_FINANCIER (
     id_rapport INT  PRIMARY KEY,
     annee INT UNIQUE,
     chiffre_affaires_annuel DECIMAL(15,2) DEFAULT 0
 );
+
+--Création de la table RAPPORT_MENSUEL
 CREATE TABLE RAPPORT_MENSUEL (
     id_rapport INT,
     mois INT,
@@ -29,7 +32,7 @@ CREATE TABLE RAPPORT_MENSUEL (
 );
 
 
-
+-- Création de la view VUE_CA_ANNUE qui affiche le chiffre d'affaire annuel
 CREATE VIEW VUE_CA_ANNUEL AS
 SELECT 
     YEAR(c.date_commande) AS annee,
@@ -39,7 +42,7 @@ JOIN LIGNE_COMMANDE l ON c.id_commande = l.id_commande
 WHERE c.statut = 'LIVREE'
 GROUP BY YEAR(c.date_commande);
 
-
+-- Création de la view VUE_CA_ANNUE qui affiche le chiffre d'affaire mensuel
 CREATE VIEW VUE_CA_MENSUEL AS
 SELECT 
     YEAR(c.date_commande) AS annee,
@@ -50,7 +53,7 @@ JOIN LIGNE_COMMANDE l ON c.id_commande = l.id_commande
 WHERE c.statut = 'LIVREE'
 GROUP BY YEAR(c.date_commande), MONTH(c.date_commande);
 
-
+--Creation des roles
 CREATE ROLE role_comptabilite;
 CREATE ROLE role_client;
 CREATE ROLE role_admin;
@@ -66,6 +69,7 @@ GRANT INSERT ON COMMANDE TO role_client;
 -- Admin
 ALTER ROLE db_owner ADD MEMBER role_admin;
 
+--Trigger : mettre a jour le chiffre d’affaires dans RAPPORT_FINANCIER et RAPPORT_MENSUE
 CREATE TRIGGER TRG_MAJ_RAPPORT_FINANCIER
 AFTER UPDATE ON COMMANDE
 FOR EACH ROW
