@@ -19,7 +19,7 @@ CREATE TABLE PRODUIT (
 
     stock_quantite INT NOT NULL,
 
-    os VARCHAR(50),
+    systeme_expploitation VARCHAR(50),
     poids_kg DECIMAL(4,2),
     image VARCHAR(255),
     description TEXT,
@@ -28,9 +28,9 @@ CREATE TABLE PRODUIT (
     id_categorie INT NOT NULL,
 
     -- composants
-    idProcesseur INT NOT NULL,
+    id_processeur INT NOT NULL,
     id_ram INT NOT NULL,
-    idCarteGraphique INT NOT NULL,
+    id_gpu INT NOT NULL,
     idEcran INT NOT NULL,
 
     CONSTRAINT fk_produit_categorie
@@ -38,20 +38,20 @@ CREATE TABLE PRODUIT (
         REFERENCES CATEGORIE(id_categorie),
 
     CONSTRAINT fk_proc
-        FOREIGN KEY (idProcesseur)
-        REFERENCES PROCESSEUR(idProcesseur),
+        FOREIGN KEY (id_processeur)
+        REFERENCES PROCESSEUR(id_processeur),
 
     CONSTRAINT fk_ram
         FOREIGN KEY (id_ram)
         REFERENCES MEMOIRE_RAM(id_ram),
 
     CONSTRAINT fk_gpu
-        FOREIGN KEY (idCarteGraphique)
-        REFERENCES CARTE_GRAPHIQUE(idCarteGraphique),
+        FOREIGN KEY (id_gpu)
+        REFERENCES CARTE_GRAPHIQUE(id_gpu),
 
     CONSTRAINT fk_ecran
-        FOREIGN KEY (idEcran)
-        REFERENCES ECRAN(idEcran)
+        FOREIGN KEY (id_ecran)
+        REFERENCES ECRAN(id_ecran)
 );
 
 CREATE INDEX idx_produit_categorie 
