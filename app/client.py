@@ -1,11 +1,83 @@
 from db import get_connection
 
+def connexion_client():
+    print("\n=== CONNEXION CLIENT ===")
+    email = input("Email : ")
+    mot_de_passe = input("Mot de passe : ")
+
+    conn = get_connection()
+    if not conn:
+        return None
+
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            "SELECT id_client FROM CLIENT WHERE email = %s AND email IN (SELECT email FROM UTILISATEUR WHERE mot_de_passe = %s)",
+            (email, mot_de_passe)
+        )
+        result = cursor.fetchone()
+
+        if result:
+            id_client = result[0]
+            print("Connexion reussie")
+            return id_client
+        else:
+            print("Email ou mot de passe incorrect")
+            return None
+
+    except Exception as e:
+        print("Erreur lors de la connexion : " + str(e))
+        return None
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def afficher_profil(id_client):
+    print("\n=== MON PROFIL ===")
+
+    conn = get_connection()
+    if not conn:
+        return
+
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            "SELECT id_client, nom, prenom, email, telephone, adresse_livraison, date_inscription, statut_compte FROM CLIENT WHERE id_client = %s",
+            (id_client,)
+        )
+        client = cursor.fetchone()
+
+        if not client:
+            print("Client introuvable")
+            return
+
+        print("ID Client : " + str(client[0]))
+        print("Nom : " + client[1])
+        print("Prenom : " + client[2])
+        print("Email : " + client[3])
+        print("Telephone : " + str(client[4]))
+        print("Adresse : " + client[5])
+        print("Date inscription : " + str(client[6]))
+        print("Statut : " + client[7])
+
+    except Exception as e:
+        print("Erreur : " + str(e))
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def inscrire_client():
     print("\n=== INSCRIPTION ===")
     nom = input("Nom : ")
-    prenom = input("Prénom : ")
+    prenom = input("Prenom : ")
     email = input("Email : ")
-    telephone = input("Téléphone : ")
+    telephone = input("Telephone : ")
     adresse = input("Adresse de livraison : ")
     mot_de_passe = input("Mot de passe : ")
 
@@ -16,25 +88,22 @@ def inscrire_client():
     cursor = conn.cursor()
 
     try:
-        # Vérifier si l'email existe déjà
         cursor.execute("SELECT id_client FROM CLIENT WHERE email = %s", (email,))
         if cursor.fetchone():
-            print("❌ Cet email est déjà utilisé !")
+            print("Cet email est deja utilise")
             return
 
-        # Insérer dans UTILISATEUR
         cursor.execute("INSERT INTO UTILISATEUR (email, mot_de_passe) VALUES (%s, %s)", (email, mot_de_passe))
         id_utilisateur = cursor.lastrowid
 
-        # Insérer dans CLIENT
         cursor.execute("INSERT INTO CLIENT (id_utilisateur, nom, prenom, email, telephone, adresse_livraison, date_inscription) VALUES (%s, %s, %s, %s, %s, %s, CURDATE())", (id_utilisateur, nom, prenom, email, telephone, adresse))
 
         conn.commit()
-        print(f"✅ Inscription réussie ! Bienvenue {prenom} {nom} !")
+        print("Inscription reussie")
 
     except Exception as e:
         conn.rollback()
-        print(f"❌ Erreur lors de l'inscription : {e}")
+        print("Erreur lors de l'inscription : " + str(e))
 
     finally:
         cursor.close()
@@ -51,35 +120,33 @@ def modifier_client(id_client):
     cursor = conn.cursor()
 
     try:
-        # Afficher les infos actuelles
         cursor.execute("SELECT nom, prenom, email, telephone, adresse_livraison FROM CLIENT WHERE id_client = %s", (id_client,))
         client = cursor.fetchone()
 
         if not client:
-            print("❌ Client introuvable.")
+            print("Client introuvable")
             return
 
-        print(f"\nInfos actuelles :")
-        print(f"  Nom        : {client[0]}")
-        print(f"  Prénom     : {client[1]}")
-        print(f"  Email      : {client[2]}")
-        print(f"  Téléphone  : {client[3]}")
-        print(f"  Adresse    : {client[4]}")
-        print("\n(Laissez vide pour ne pas modifier)")
+        print("Infos actuelles :")
+        print("Nom : " + client[0])
+        print("Prenom : " + client[1])
+        print("Email : " + client[2])
+        print("Telephone : " + str(client[3]))
+        print("Adresse : " + client[4])
 
-        nom = input(f"Nouveau nom [{client[0]}] : ") or client[0]
-        prenom = input(f"Nouveau prénom [{client[1]}] : ") or client[1]
-        telephone = input(f"Nouveau téléphone [{client[3]}] : ") or client[3]
-        adresse = input(f"Nouvelle adresse [{client[4]}] : ") or client[4]
+        nom = input("Nouveau nom [" + client[0] + "] : ") or client[0]
+        prenom = input("Nouveau prenom [" + client[1] + "] : ") or client[1]
+        telephone = input("Nouveau telephone [" + str(client[3]) + "] : ") or client[3]
+        adresse = input("Nouvelle adresse [" + client[4] + "] : ") or client[4]
 
         cursor.execute("UPDATE CLIENT SET nom = %s, prenom = %s, telephone = %s, adresse_livraison = %s WHERE id_client = %s", (nom, prenom, telephone, adresse, id_client))
 
         conn.commit()
-        print("✅ Informations mises à jour avec succès !")
+        print("Informations mises a jour")
 
     except Exception as e:
         conn.rollback()
-        print(f"❌ Erreur : {e}")
+        print("Erreur : " + str(e))
 
     finally:
         cursor.close()
@@ -87,12 +154,12 @@ def modifier_client(id_client):
 
 
 def desinscrire_client(id_client):
-    print("\n=== DÉSINSCRIPTION ===")
-    print("⚠️  Cette action est irréversible !")
-    confirmation = input("Êtes-vous sûr de vouloir vous désinscrire ? (oui/non) : ")
+    print("\n=== DESINSCRIPTION ===")
+    print("Attention : cette action est irreversible")
+    confirmation = input("Etes-vous sur de vouloir vous desinscrire ? (oui/non) : ")
 
     if confirmation.lower() != "oui":
-        print("Désinscription annulée.")
+        print("Desinscription annulee")
         return
 
     conn = get_connection()
@@ -102,28 +169,24 @@ def desinscrire_client(id_client):
     cursor = conn.cursor()
 
     try:
-        # Récupérer id_utilisateur
         cursor.execute("SELECT id_utilisateur FROM CLIENT WHERE id_client = %s", (id_client,))
         result = cursor.fetchone()
         if not result:
-            print("❌ Client introuvable.")
+            print("Client introuvable")
             return
         id_utilisateur = result[0]
 
-        # Supprimer le client (le trigger TRG_RGPD_DESINSCRIPTION s'occupe du reste)
         cursor.execute("DELETE FROM CLIENT WHERE id_client = %s", (id_client,))
 
-        # Supprimer aussi de UTILISATEUR
         if id_utilisateur:
             cursor.execute("DELETE FROM UTILISATEUR WHERE id_utilisateur = %s", (id_utilisateur,))
 
         conn.commit()
-        print("✅ Désinscription effectuée. Vos données personnelles ont été supprimées.")
-        print("   Votre historique de commandes est conservé de manière anonyme (RGPD).")
+        print("Desinscription effectuee. Vos donnees ont ete supprimees.")
 
     except Exception as e:
         conn.rollback()
-        print(f"❌ Erreur lors de la désinscription : {e}")
+        print("Erreur lors de la desinscription : " + str(e))
 
     finally:
         cursor.close()
