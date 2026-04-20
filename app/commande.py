@@ -2,18 +2,7 @@
 
 import mysql.connector
 from datetime import date
-
-# --- Connexion à la base de données ---
-def get_connection():
-    conn = mysql.connector.connect(
-        host="127.0.0.1",
-        port=3306,
-        database="boutique_pc",
-        user="UTILISATEUR",
-        password="password"
-    )
-    return conn
-
+from db import get_connection
 
 # --- Afficher les produits disponibles ---
 def afficher_catalogue():
