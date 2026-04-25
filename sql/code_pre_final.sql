@@ -1,4 +1,3 @@
-
 -- ============================================================
 -- BOUTIQUE PC EN LIGNE - Base de données complète et corrigée
 -- Groupe : Hiba Khadiri, Maya Bouhamdani, Yahya Lahniti, Ahmed Feki
@@ -230,15 +229,40 @@ JOIN ECRAN e            ON p.id_ecran      = e.id_ecran
 WHERE p.disponibilite = 'en_stock'
 ORDER BY p.prix_vente ASC;
 
-CREATE VIEW VUE_STOCK_FAIBLE AS
+-- VUE_STOCK_FAIBLE remplacée par une vue plus complexe :
+-- calcule pour chaque produit le nombre de jours estimés avant rupture de stock
+-- en divisant le stock actuel par la moyenne de ventes par jour (sur les 90 derniers jours)
+CREATE VIEW VUE_ALERTE_STOCK AS
 SELECT
     p.id_produit,
     p.nom_commercial,
     p.marque,
     p.stock_quantite,
-    p.disponibilite
+    p.disponibilite,
+    COALESCE(ROUND(
+        SUM(lc.quantite) / NULLIF(DATEDIFF(CURDATE(), MIN(c.date_commande)), 0)
+    , 2), 0)                                                        AS ventes_par_jour,
+    CASE
+        WHEN SUM(lc.quantite) IS NULL OR SUM(lc.quantite) = 0
+            THEN 'Aucune vente recente'
+        WHEN p.stock_quantite = 0
+            THEN 'Rupture de stock'
+        WHEN p.stock_quantite / NULLIF(
+                SUM(lc.quantite) / NULLIF(DATEDIFF(CURDATE(), MIN(c.date_commande)), 0)
+             , 0) <= 7
+            THEN 'Critique (moins de 7 jours)'
+        WHEN p.stock_quantite / NULLIF(
+                SUM(lc.quantite) / NULLIF(DATEDIFF(CURDATE(), MIN(c.date_commande)), 0)
+             , 0) <= 30
+            THEN 'Attention (moins de 30 jours)'
+        ELSE 'Stock suffisant'
+    END AS alerte
 FROM PRODUIT p
-WHERE p.stock_quantite < 5;
+LEFT JOIN LIGNE_COMMANDE lc ON p.id_produit = lc.id_produit
+LEFT JOIN COMMANDE c ON lc.id_commande = c.id_commande
+    AND c.statut = 'livree'
+    AND c.date_commande >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+GROUP BY p.id_produit, p.nom_commercial, p.marque, p.stock_quantite, p.disponibilite;
 
 -- Données de test catégories et produits
 INSERT INTO CATEGORIE (nom_categorie) VALUES
@@ -263,6 +287,8 @@ CREATE TABLE UTILISATEUR (
     id_utilisateur INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
     mot_de_passe VARCHAR(255) NOT NULL
+    -- Note : les mots de passe sont stockés en clair dans ce projet académique.
+    -- En production, il faudrait utiliser un algorithme de hachage (bcrypt, SHA2...).
 );
 
 CREATE TABLE CLIENT (
@@ -337,15 +363,7 @@ BEGIN
     UPDATE AVIS SET id_client = NULL WHERE id_client = OLD.id_client;
 END$$
 
-CREATE TRIGGER TRG_VERIF_NOTE
-BEFORE INSERT ON AVIS
-FOR EACH ROW
-BEGIN
-    IF NEW.note_sur_5 < 1 OR NEW.note_sur_5 > 5 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Erreur : la note doit etre comprise entre 1 et 5.';
-    END IF;
-END$$
+-- TRG_VERIF_NOTE supprimé car redondant avec la contrainte CHECK sur note_sur_5.
 
 CREATE TRIGGER TRG_VERIF_AVIS
 BEFORE INSERT ON AVIS
@@ -450,7 +468,7 @@ INSERT INTO LIGNE_COMMANDE (id_commande, id_produit, quantite, prix_unitaire_cap
     (3, 2, 1, 1399.00);
 
 INSERT INTO AVIS (id_client, id_produit, note_sur_5, commentaire, date_avis) VALUES
-    (1, 1, 5, 'Excellent PC, tres performant.',      '2026-02-20'),
+    (1, 1, 5, 'Excellent PC, tres performant.',        '2026-02-20'),
     (1, 2, 4, 'Tres bon produit, autonomie correcte.', '2026-02-22');
 
 
@@ -531,18 +549,57 @@ END$$
 
 DELIMITER ;
 
--- Permissions
+-- ============================================================
+-- PERMISSIONS ET ROLES
+-- ============================================================
+
+-- Création des rôles
 CREATE ROLE role_comptabilite;
 CREATE ROLE role_client;
 CREATE ROLE role_admin;
 
-GRANT SELECT ON VUE_CA_ANNUEL TO role_comptabilite;
-GRANT SELECT ON VUE_CA_MENSUEL TO role_comptabilite;
-GRANT SELECT ON PRODUIT TO role_client;
-GRANT INSERT ON COMMANDE TO role_client;
-GRANT ALL PRIVILEGES ON *.* TO role_admin WITH GRANT OPTION;
+-- Permissions role_comptabilite : lecture des rapports financiers uniquement
+GRANT SELECT ON VUE_CA_ANNUEL     TO role_comptabilite;
+GRANT SELECT ON VUE_CA_MENSUEL    TO role_comptabilite;
+GRANT SELECT ON RAPPORT_FINANCIER TO role_comptabilite;
+GRANT SELECT ON RAPPORT_MENSUEL   TO role_comptabilite;
 
--- Données de test comptabilité
+-- Permissions role_client : consultation du catalogue et gestion de son compte
+GRANT SELECT ON PRODUIT          TO role_client;
+GRANT SELECT ON CATEGORIE        TO role_client;
+GRANT SELECT ON PROCESSEUR       TO role_client;
+GRANT SELECT ON MEMOIRE_RAM      TO role_client;
+GRANT SELECT ON CARTE_GRAPHIQUE  TO role_client;
+GRANT SELECT ON ECRAN            TO role_client;
+GRANT SELECT ON VUE_COMPOSANTS_PRODUIT TO role_client;
+GRANT SELECT ON VUE_PRODUITS_PAR_PRIX  TO role_client;
+GRANT INSERT ON UTILISATEUR      TO role_client;
+GRANT INSERT, UPDATE, DELETE ON CLIENT TO role_client;
+GRANT INSERT ON COMMANDE         TO role_client;
+GRANT INSERT ON LIGNE_COMMANDE   TO role_client;
+GRANT INSERT, DELETE ON AVIS     TO role_client;
+
+-- Permissions role_admin : tous les droits sur la base boutique_pc uniquement
+GRANT ALL PRIVILEGES ON boutique_pc.* TO role_admin WITH GRANT OPTION;
+
+-- Création des utilisateurs MySQL et attribution des rôles
+CREATE USER 'user_client'@'%'  IDENTIFIED BY 'clientpass';
+CREATE USER 'user_compta'@'%'  IDENTIFIED BY 'comptapass';
+CREATE USER 'user_admin'@'%'   IDENTIFIED BY 'adminpass';
+
+GRANT role_client       TO 'user_client'@'%';
+GRANT role_comptabilite TO 'user_compta'@'%';
+GRANT role_admin        TO 'user_admin'@'%';
+
+-- Activation des rôles par défaut au login
+SET DEFAULT ROLE role_client       TO 'user_client'@'%';
+SET DEFAULT ROLE role_comptabilite TO 'user_compta'@'%';
+SET DEFAULT ROLE role_admin        TO 'user_admin'@'%';
+
+-- ============================================================
+-- DONNÉES DE TEST : Comptabilité
+-- ============================================================
+
 INSERT INTO UTILISATEUR (email, mot_de_passe) VALUES
     ('comptable1@boutique.com', 'compta123'),
     ('comptable2@boutique.com', 'compta456');
