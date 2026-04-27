@@ -1,12 +1,16 @@
+# commande.py
 # Responsable : Hiba Khadiri
 
 import mysql.connector
 from datetime import date
 from db import get_connection
 
+
 # --- Afficher les produits disponibles ---
 def afficher_catalogue():
     conn = get_connection()
+    if not conn:
+        return
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -31,10 +35,12 @@ def afficher_panier(panier):
         print("Le panier est vide.")
         return
     total = 0
+    numero = 1
     for item in panier:
         sous_total = item["prix"] * item["quantite"]
         total += sous_total
-        print(f"{item['nom']} x{item['quantite']} = {sous_total:.2f}€")
+        print(f"{numero}. {item['nom']} x{item['quantite']} = {sous_total:.2f}€")
+        numero += 1
     print(f"TOTAL : {total:.2f}€")
 
 
@@ -46,6 +52,8 @@ def ajouter_au_panier(panier):
     quantite = int(input("Quantité : "))
 
     conn = get_connection()
+    if not conn:
+        return
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -59,6 +67,16 @@ def ajouter_au_panier(panier):
     elif quantite > produit[2]:
         print(f"Stock insuffisant. Disponible : {produit[2]}")
     else:
+        # Vérifier si le produit est déjà dans le panier
+        for item in panier:
+            if item["id_produit"] == id_produit:
+                item["quantite"] += quantite
+                print("Quantité mise à jour dans le panier.")
+                cursor.close()
+                conn.close()
+                return
+
+        # Sinon on l'ajoute
         panier.append({
             "id_produit": id_produit,
             "nom": produit[0],
@@ -71,6 +89,23 @@ def ajouter_au_panier(panier):
     conn.close()
 
 
+# --- Retirer un produit du panier ---
+def retirer_du_panier(panier):
+    if not panier:
+        print("Le panier est vide.")
+        return
+
+    afficher_panier(panier)
+    numero = int(input("\nNuméro du produit à retirer : "))
+
+    if numero < 1 or numero > len(panier):
+        print("Numéro invalide.")
+        return
+
+    produit_retire = panier.pop(numero - 1)
+    print(f"'{produit_retire['nom']}' retiré du panier.")
+
+
 # --- Valider la commande ---
 def valider_commande(panier, id_client, adresse_livraison):
     if not panier:
@@ -78,6 +113,8 @@ def valider_commande(panier, id_client, adresse_livraison):
         return
 
     conn = get_connection()
+    if not conn:
+        return
     cursor = conn.cursor()
 
     try:
@@ -118,6 +155,8 @@ def valider_commande(panier, id_client, adresse_livraison):
 # --- Historique des commandes ---
 def afficher_historique(id_client):
     conn = get_connection()
+    if not conn:
+        return
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -131,13 +170,14 @@ def afficher_historique(id_client):
     print("\n--- HISTORIQUE DE VOS COMMANDES ---")
     if not commandes:
         print("Aucune commande trouvée.")
+        cursor.close()
+        conn.close()
         return
 
     for cmd in commandes:
         id_cmd, date_cmd, statut, total = cmd
         print(f"\nCommande #{id_cmd} | {date_cmd} | {statut} | {total:.2f}€")
 
-        # Détail des produits de cette commande
         cursor.execute("""
             SELECT p.nom_commercial, lc.quantite, lc.prix_unitaire_capture
             FROM LIGNE_COMMANDE lc
@@ -159,9 +199,10 @@ def menu_commandes(id_client, adresse_livraison):
         print("\n--- MENU COMMANDES ---")
         print("1. Voir le catalogue")
         print("2. Ajouter au panier")
-        print("3. Voir mon panier")
-        print("4. Valider ma commande")
-        print("5. Voir mon historique")
+        print("3. Retirer un produit du panier")
+        print("4. Voir mon panier")
+        print("5. Valider ma commande")
+        print("6. Voir mon historique")
         print("0. Quitter")
 
         choix = input("Votre choix : ")
@@ -171,10 +212,12 @@ def menu_commandes(id_client, adresse_livraison):
         elif choix == "2":
             ajouter_au_panier(panier)
         elif choix == "3":
-            afficher_panier(panier)
+            retirer_du_panier(panier)
         elif choix == "4":
-            valider_commande(panier, id_client, adresse_livraison)
+            afficher_panier(panier)
         elif choix == "5":
+            valider_commande(panier, id_client, adresse_livraison)
+        elif choix == "6":
             afficher_historique(id_client)
         elif choix == "0":
             break
