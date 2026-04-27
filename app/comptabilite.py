@@ -11,18 +11,14 @@ from db import get_connection
 # ─────────────────────────────────────────────
 
 def est_membre_comptabilite(id_utilisateur):
-    """
-    Vérifie que l'utilisateur connecté figure dans MEMBRE_COMPTABILITE.
-    Retourne True si oui, False sinon.
-    """
     conn = get_connection()
     if conn is None:
         return False
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT idMembre FROM MEMBRE_COMPTABILITE "
-            "WHERE idUtilisateur = %s",
+            "SELECT id_utilisateur FROM MEMBRE_COMPTABILITE "
+            "WHERE id_utilisateur = %s",
             (id_utilisateur,)
         )
         row = cursor.fetchone()
@@ -40,16 +36,10 @@ def est_membre_comptabilite(id_utilisateur):
 # ─────────────────────────────────────────────
 
 def rapport_annuel():
-    """
-    Demande une année à l'utilisateur, puis affiche :
-    - Le CA annuel  (via VUE_CA_ANNUEL)
-    - Le CA mensuel (via VUE_CA_MENSUEL)
-    """
     annee_saisie = input("\nEntrez l'année du rapport (ex : 2026) : ").strip()
 
-    # Validation basique
     if not annee_saisie.isdigit() or len(annee_saisie) != 4:
-        print("✘  Année invalide. Veuillez saisir une année sur 4 chiffres.")
+        print("Année invalide. Veuillez saisir une année sur 4 chiffres.")
         return
 
     annee = int(annee_saisie)
@@ -59,17 +49,17 @@ def rapport_annuel():
         return
 
     try:
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
-        # ── CA annuel ────────────────────────────
+        # CA annuel
         cursor.execute(
             "SELECT chiffreAffaires FROM VUE_CA_ANNUEL WHERE annee = %s",
             (annee,)
         )
         row_annuel = cursor.fetchone()
-        ca_annuel = row_annuel["chiffreAffaires"] if row_annuel else 0.0
+        ca_annuel = row_annuel[0] if row_annuel else 0.0
 
-        # ── CA mensuel ───────────────────────────
+        # CA mensuel
         cursor.execute(
             "SELECT mois, chiffreAffaires "
             "FROM VUE_CA_MENSUEL "
@@ -82,12 +72,12 @@ def rapport_annuel():
         cursor.close()
         conn.close()
 
-        # ── Affichage ────────────────────────────
+        # Affichage
         MOIS_FR = {
-            1: "Janvier",   2: "Février",   3: "Mars",
+            1: "Janvier",   2: "Fevrier",   3: "Mars",
             4: "Avril",     5: "Mai",       6: "Juin",
-            7: "Juillet",   8: "Août",      9: "Septembre",
-            10: "Octobre",  11: "Novembre", 12: "Décembre"
+            7: "Juillet",   8: "Aout",      9: "Septembre",
+            10: "Octobre",  11: "Novembre", 12: "Decembre"
         }
 
         print("\n" + "=" * 45)
@@ -98,10 +88,10 @@ def rapport_annuel():
 
         if lignes_mensuelles:
             for ligne in lignes_mensuelles:
-                nom_mois = MOIS_FR.get(ligne["mois"], f"Mois {ligne['mois']}")
-                print(f"  {nom_mois:<12} : {ligne['chiffreAffaires']:>10,.2f} EUR")
+                nom_mois = MOIS_FR.get(ligne[0], f"Mois {ligne[0]}")
+                print(f"  {nom_mois:<12} : {ligne[1]:>10,.2f} EUR")
         else:
-            print("  Aucune donnée mensuelle disponible pour cette année.")
+            print("  Aucune donnée disponible pour cette année.")
 
         print("=" * 45)
 
@@ -115,16 +105,11 @@ def rapport_annuel():
 # ─────────────────────────────────────────────
 
 def menu_comptabilite(id_utilisateur):
-    """
-    Point d'entrée du module comptabilité.
-    Vérifie l'accès, puis affiche le menu.
-    """
-    # Fonctionnalité 1 — Vérification du droit d'accès
     if not est_membre_comptabilite(id_utilisateur):
-        print("\n✘  Accès refusé : vous n'êtes pas membre du service comptabilité.")
+        print("\nAccès refusé : vous n'êtes pas membre du service comptabilité.")
         return
 
-    print("\n✔  Accès autorisé — Espace Comptabilité")
+    print("\nAccès autorisé — Espace Comptabilité")
 
     while True:
         print("\n── Menu Comptabilité ──")
@@ -134,11 +119,8 @@ def menu_comptabilite(id_utilisateur):
         choix = input("Votre choix : ").strip()
 
         if choix == "1":
-            # Fonctionnalité 2 — Rapport annuel
             rapport_annuel()
-
         elif choix == "2":
             break
-
         else:
             print("Choix invalide. Veuillez entrer 1 ou 2.")
