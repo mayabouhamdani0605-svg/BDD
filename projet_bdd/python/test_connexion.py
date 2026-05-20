@@ -1,0 +1,7 @@
+from db import get_connection
+conn = get_connection()
+if conn :
+    print("connexion réussie à la base de données")
+    conn.close()
+else:
+    print("echec de la connexion")
