@@ -178,18 +178,34 @@ apparaisse.
 ```bash
 cd C:\Users\VotreNom\Desktop\projet_bdd\projet_bdd\db_docker
 ```
-on ecrit dans le cmd : docker compose up -d
 
-lancer sql dans le meme terminal que docker compose up - d : docker exec -it projet-bdd-mysql-1 mysql -u root -prootpassword boutique_pc
+On écrit dans le cmd :
 
+```bash
+docker compose up -d
+```
 
-## 8 - aller dans le dossier python
+Lancer SQL dans le même terminal que `docker compose up -d` :
 
+```bash
+docker exec -it projet-bdd-mysql-1 mysql -u root -prootpassword boutique_pc
+```
+
+---
+
+# 8. Aller dans le dossier Python
+
+```bash
 cd C:\Users\VotreNom\Desktop\projet_bdd\projet_bdd\python
+```
 
-executer cette ligne : python main.py 
+Exécuter cette ligne :
 
+```bash
+python main.py
+```
 
+---
 
 # 10. Données de test
 
