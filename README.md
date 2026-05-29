@@ -186,6 +186,7 @@ lancer sql dans le meme terminal que docker compose up - d : docker exec -it pro
 ## 8 - aller dans le dossier python
 
 cd C:\Users\VotreNom\Desktop\projet_bdd\projet_bdd\python
+
 executer cette ligne : python main.py 
 
 
