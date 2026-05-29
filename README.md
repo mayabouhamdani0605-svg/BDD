@@ -410,42 +410,6 @@ SELECT * FROM AVIS;
 
 ---
 
-# 13. Problèmes rencontrés
-
-## Port 3306 déjà utilisé
-
-Solution :
-modifier :
-
-```yaml
-ports:
-  - "3307:3306"
-```
-
-dans `docker-compose.yml`
-
-et :
-
-```python
-port=3307
-```
-
-dans `db.py`
-
----
-
-## Docker Desktop ne démarre pas
-
-Solution :
-
-```bash
-wsl --update
-```
-
-puis relancer Docker Desktop.
-
----
-
 # 14. Conclusion
 
 Le projet implémente :
