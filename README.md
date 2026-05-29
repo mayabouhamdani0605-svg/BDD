@@ -2,11 +2,6 @@
 
 ## Boutique de vente d’ordinateurs portables
 
-### Auteurs
-
-* Maya
-* [Ajouter les autres membres du groupe]
-
 ---
 
 # 1. Description du projet
